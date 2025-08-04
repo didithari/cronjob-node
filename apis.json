@@ -1,0 +1,14 @@
+[
+  {
+    "url": "https://jsonplaceholder.typicode.com/todos/1",
+    "interval": "*/1 * * * *" 
+  },
+  {
+    "url": "https://jsonplaceholder.typicode.com/todos/2",
+    "interval": "*/10 * * * * *" 
+  },
+  {
+    "url": "https://jsonplaceholder.typicode.com/todos/invalid",
+    "interval": "*/5 * * * *"
+  }
+]
