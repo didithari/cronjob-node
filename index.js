@@ -33,33 +33,33 @@ async function sendWaAlert(message) {
 }
 
 // Fungsi untuk memanggil API
-function callApi(url) {
-  console.log(`🔄 Trying: ${url}`);
+function callApi(name, url) {
+  console.log(`🔄 [${name}] Trying: ${url}`);
   axios.get(url, { timeout: 5000 })
     .then((res) => {
-      console.log(`✅ SUCCESS: ${url} (${res.status})`);
+      console.log(`✅ [${name}] SUCCESS: ${url} (${res.status})`);
     })
     .catch((err) => {
       const statusCode = err?.response?.status;
       const statusText = err?.response?.statusText;
       const reason = statusCode ? `${statusCode} ${statusText}` : err.message;
 
-      console.error(`❌ ERROR: ${url} - ${reason}`);
-      sendWaAlert(`⚠️ API Error\nURL: ${url}\nReason: ${reason}`);
+      console.error(`❌ [${name}] ERROR: ${url} - ${reason}`);
+      sendWaAlert(`⚠️ API Error\nName: ${name}\nURL: ${url}\nReason: ${reason}`);
     });
 }
 
 // Jadwalkan tiap API dengan cron masing-masing
 apis.forEach((api) => {
   if (!cron.validate(api.interval)) {
-    console.error(`⛔ Invalid cron for ${api.url}: ${api.interval}`);
+    console.error(`⛔ Invalid cron for ${api.name} (${api.url}): ${api.interval}`);
     return;
   }
 
   cron.schedule(api.interval, () => {
-    console.log(`\n⏱️ [${new Date().toLocaleTimeString()}] Calling: ${api.url}`);
-    callApi(api.url); // tidak pakai await → non-blocking
+    console.log(`\n⏱️ [${new Date().toLocaleTimeString()}] Calling: ${api.name}`);
+    callApi(api.name, api.url); // tidak pakai await → non-blocking
   });
 
-  console.log(`📆 Scheduled ${api.url} every "${api.interval}"`);
+  console.log(`📆 Scheduled ${api.name} every "${api.interval}"`);
 });
