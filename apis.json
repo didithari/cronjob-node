@@ -1,17 +1,22 @@
 [
   {
-    "name": "API Todo 1",
+    "name": "API 1",
     "url": "https://jsonplaceholder.typicode.com/todos/1",
-    "interval": "*/1 * * * * *" 
+    "interval": "*/1 * * * * *"
   },
   {
-    "name": "API Todo 2", 
+    "name": "API 2", 
     "url": "https://jsonplaceholder.typicode.com/todos/2",
-    "interval": "*/2 * * * * *" 
+    "interval": "*/2 * * * * *"
   },
   {
-    "name": "API Invalid Test",
+    "name": "API 3",
+    "url": "https://jsonplaceholder.typicode.com/todos/3",
+    "interval": "*/1 * * * * *"
+  },
+  {
+    "name": "API 4",
     "url": "https://jsonplaceholder.typicode.com/todos/invalid",
-    "interval": "*/5 * * * * *"
+    "interval": "*/1 * * * * *"
   }
 ]

@@ -1,195 +1,160 @@
-# Cronjob Node - API Monitoring dengan WhatsApp Alert
+# Cronjob Node - Independent API Runner
 
-Sebuah aplikasi Node.js yang memonitor API secara berkala menggunakan cron jobs dan mengirim notifikasi WhatsApp ketika API mengalami error.
+Sistem ini menjalankan multiple API secara independen tanpa menunggu API lain selesai, sesuai dengan interval waktu yang ditentukan.
 
-## 🚀 Fitur
+## Fitur
 
-- **API Monitoring**: Memonitor multiple API secara bersamaan
-- **Cron Scheduling**: Menggunakan node-cron untuk penjadwalan yang fleksibel
-- **WhatsApp Alert**: Kirim notifikasi otomatis ke WhatsApp ketika API error
-- **Configurable**: Konfigurasi API melalui file JSON
-- **Real-time Logging**: Log aktivitas monitoring secara real-time
+- **API 1**: Dipanggil setiap 1 detik
+- **API 2**: Dipanggil setiap 2 detik  
+- **API 3**: Dipanggil setiap 1 detik
+- **API 4**: Dipanggil setiap 1 detik (dengan URL invalid untuk testing)
+- Setiap API berjalan independen tanpa blocking
+- **Retry mechanism**: 3 kali percobaan sebelum notifikasi WhatsApp
+- **WhatsApp limit**: Maksimal 2 notifikasi per API sampai restart
+- Notifikasi WhatsApp otomatis jika semua retry gagal (dengan batasan)
+- Log real-time untuk monitoring
 
-## 📋 Prerequisites
+## Cara Kerja
 
-Sebelum menjalankan aplikasi ini, pastikan Anda memiliki:
+1. **Saat startup**: Semua API langsung dipanggil
+2. **Interval berjalan**: Setiap API dipanggil ulang sesuai intervalnya tanpa menunggu yang lain selesai
+3. **Non-blocking**: API calls berjalan secara asynchronous
+4. **Retry system**: Jika API gagal, akan dicoba 3 kali dengan delay 2 detik
+5. **WhatsApp alert**: Hanya dikirim setelah semua retry gagal (maksimal 2 kali per API)
+6. **Notification limit**: Setelah 2 notifikasi, tidak akan kirim lagi sampai restart
 
-- **Node.js** (versi 14 atau lebih baru)
-- **npm** (Node Package Manager)
-- **WhatsApp API** (untuk fitur alert)
+## Konfigurasi
 
-## 🛠️ Installation
-
-### 1. Clone atau Download Project
-
-```bash
-# Jika menggunakan git
-git clone <repository-url>
-cd cronjob-node
-
-# Atau download dan extract file ZIP
-```
-
-### 2. Install Dependencies
-
-```bash
-npm install
-```
-
-### 3. Konfigurasi WhatsApp API
-
-Edit file `index.js` dan sesuaikan konfigurasi WhatsApp:
-
-```javascript
-// Konfigurasi WhatsApp
-const WHATSAPP_API = "https://your-wa-api.com/send"; // Ganti dengan API WhatsApp Anda
-const FROM = "BOT"; // Nama pengirim
-const TO = "6289697435234"; // Nomor WhatsApp tujuan (format: 628xxx)
-```
-
-### 4. Konfigurasi API yang akan dimonitor
-
-Edit file `apis.json` untuk menambahkan API yang ingin dimonitor:
-
+### APIs (`apis.json`)
 ```json
 [
   {
-    "name": "API Todo 1",
+    "name": "API 1",
     "url": "https://jsonplaceholder.typicode.com/todos/1",
     "interval": "*/1 * * * * *"
   },
   {
-    "name": "API Todo 2", 
+    "name": "API 2", 
     "url": "https://jsonplaceholder.typicode.com/todos/2",
     "interval": "*/2 * * * * *"
+  },
+  {
+    "name": "API 3",
+    "url": "https://jsonplaceholder.typicode.com/todos/3",
+    "interval": "*/1 * * * * *"
+  },
+  {
+    "name": "API 4",
+    "url": "https://jsonplaceholder.typicode.com/todos/invalid",
+    "interval": "*/1 * * * * *"
   }
 ]
 ```
 
-## 🚀 Cara Menjalankan
+### WhatsApp Alert
+Update konfigurasi di `index.js`:
+```javascript
+const WHATSAPP_API = "https://your-wa-api.com/send"; 
+const FROM = "BOT";
+const TO = "6289697435234";
+```
 
-### Development Mode
+### Retry & Notification Settings
+```javascript
+const MAX_RETRY_ATTEMPTS = 3;           // Jumlah retry sebelum alert
+const RETRY_DELAY_MS = 2000;            // Delay 2 detik antar retry
+const MAX_WA_NOTIFICATIONS = 2;         // Maksimal 2 notifikasi WhatsApp per API
+```
+
+## Install & Run
 
 ```bash
+# Install dependencies
+npm install
+
+# Jalankan aplikasi
 node index.js
 ```
 
-### Production Mode (dengan PM2)
-
-```bash
-# Install PM2 secara global
-npm install -g pm2
-
-# Jalankan aplikasi
-pm2 start index.js --name "api-monitor"
-
-# Cek status
-pm2 status
-
-# Lihat log
-pm2 logs api-monitor
-```
-
-## ⚙️ Konfigurasi
-
-### Format Cron Expression
-
-Aplikasi menggunakan format cron dengan 6 field: `second minute hour day month weekday`
-
-Contoh:
-- `*/1 * * * * *` = Setiap 1 detik
-- `*/30 * * * * *` = Setiap 30 detik  
-- `0 */5 * * * *` = Setiap 5 menit
-- `0 0 */1 * * *` = Setiap 1 jam
-
-### Struktur File apis.json
-
-```json
-[
-  {
-    "name": "Nama API",           // Nama untuk identifikasi
-    "url": "https://api-url.com", // URL API yang akan dimonitor
-    "interval": "*/1 * * * * *"   // Cron expression untuk interval
-  }
-]
-```
-
-## 📊 Monitoring
-
-Aplikasi akan menampilkan log real-time:
+## Output Log
 
 ```
-✅ Loaded APIs: 3
-📆 Scheduled API Todo 1 every "*/1 * * * * *"
-📆 Scheduled API Todo 2 every "*/2 * * * * *"
-📆 Scheduled API Invalid Test every "*/5 * * * * *"
+✅ Loaded APIs: 4
 
-⏱️ [14:30:15] Calling: API Todo 1
-🔄 [API Todo 1] Trying: https://jsonplaceholder.typicode.com/todos/1
-✅ [API Todo 1] SUCCESS: https://jsonplaceholder.typicode.com/todos/1 (200)
+🚀 Starting all APIs with their respective intervals...
+🔄 Retry mechanism: 3 attempts with 2s delay
+📱 WhatsApp notifications: Maximum 2 per API until restart
 
-⏱️ [14:30:16] Calling: API Todo 2
-🔄 [API Todo 2] Trying: https://jsonplaceholder.typicode.com/todos/2
-✅ [API Todo 2] SUCCESS: https://jsonplaceholder.typicode.com/todos/2 (200)
+📅 Starting API 1 with 1 second interval
+📅 Starting API 2 with 2 second interval
+📅 Starting API 3 with 1 second interval
+📅 Starting API 4 with 1 second interval
+
+✨ All APIs started successfully!
+Each API will run independently without waiting for others to complete.
+WhatsApp notifications limited to 2 per API until restart.
+Press Ctrl+C to stop all processes.
+
+🔄 [API 1] Calling: https://jsonplaceholder.typicode.com/todos/1 at 10:30:15
+✅ [API 1] SUCCESS: https://jsonplaceholder.typicode.com/todos/1 (200)
+
+🔄 [API 4] Calling: https://jsonplaceholder.typicode.com/todos/invalid at 10:30:15
+⚠️ [API 4] Attempt 1/3 failed: 404 Not Found
+⏳ [API 4] Retrying in 2 seconds...
+⚠️ [API 4] Attempt 2/3 failed: 404 Not Found
+⏳ [API 4] Retrying in 2 seconds...
+❌ [API 4] All 3 attempts failed. Final error: 404 Not Found
+📨 [API 4] WA alert sent (1/2). Response: 200
+
+📊 Status Update at 10:30:25
+All APIs are running independently with their intervals
+Retry attempts: 3, Max WA notifications: 2 per API
+📱 [API 4]: 1/2 notifications sent (1 remaining)
 ```
 
-## 🔔 WhatsApp Alert
+## Fitur Retry & Notification Limit
 
-Ketika API mengalami error, aplikasi akan mengirim notifikasi WhatsApp dengan format:
+### Retry Mechanism
+- **3 kali percobaan** sebelum mengirim notifikasi WhatsApp
+- **Delay 2 detik** antar setiap retry
+- Log detail untuk setiap percobaan yang gagal
 
+### WhatsApp Notification Limit
+- **Maksimal 2 notifikasi** per API sampai aplikasi di-restart
+- Mencegah spam notifikasi jika API terus-menerus error
+- Counter terpisah untuk setiap API
+- Setelah limit tercapai, tidak akan kirim notifikasi lagi
+
+### Contoh Skenario
+1. API 4 gagal → Retry 1 (2s delay)
+2. API 4 gagal lagi → Retry 2 (2s delay)  
+3. API 4 gagal lagi → Retry 3 (2s delay)
+4. Semua retry gagal → Kirim WhatsApp notification #1 (1/2)
+5. API 4 gagal lagi → Kirim WhatsApp notification #2 (2/2)
+6. API 4 gagal lagi → Skip notifikasi (limit tercapai)
+7. **Tidak akan kirim notifikasi lagi sampai restart aplikasi**
+
+## Status Monitoring
+
+Sistem akan menampilkan status notifikasi setiap 10 detik:
 ```
-⚠️ API Error
-Name: [Nama API]
-URL: [URL API]
-Reason: [Alasan Error]
+📊 Status Update at 10:30:35
+All APIs are running independently with their intervals
+Retry attempts: 3, Max WA notifications: 2 per API
+📱 [API 4]: 2/2 notifications sent (0 remaining)
 ```
 
-## 📁 Struktur Project
+## Perbedaan dengan Versi Sebelumnya
 
-```
-cronjob-node/
-├── index.js          # File utama aplikasi
-├── apis.json         # Konfigurasi API yang dimonitor
-├── package.json      # Dependencies dan metadata
-├── package-lock.json # Lock file untuk dependencies
-└── README.md         # Dokumentasi ini
-```
+- **Sebelumnya**: Anti-spam delay 30 detik antar notifikasi
+- **Sekarang**: Limit maksimal 2 notifikasi per API sampai restart
+- **Keuntungan**: Lebih efisien, tidak ada notifikasi berlebihan
+- **Reset**: Counter notifikasi reset otomatis saat restart aplikasi
 
-## 🛡️ Troubleshooting
+## Troubleshooting
 
-### Error: "Failed to load apis.json"
-- Pastikan file `apis.json` ada di root directory
-- Periksa format JSON apakah valid
-
-### Error: "Invalid cron expression"
-- Periksa format cron expression di `apis.json`
-- Gunakan validator online untuk memastikan format benar
-
-### WhatsApp Alert tidak terkirim
-- Periksa konfigurasi WhatsApp API di `index.js`
-- Pastikan URL API WhatsApp benar dan dapat diakses
-- Periksa nomor tujuan apakah format benar (628xxx)
-
-### API Timeout
-- Aplikasi menggunakan timeout 5 detik untuk setiap request
-- Jika API lambat, pertimbangkan untuk menambah timeout atau mengubah interval
-
-## 🤝 Contributing
-
-1. Fork project ini
-2. Buat branch untuk fitur baru (`git checkout -b feature/AmazingFeature`)
-3. Commit perubahan (`git commit -m 'Add some AmazingFeature'`)
-4. Push ke branch (`git push origin feature/AmazingFeature`)
-5. Buat Pull Request
-
-## 📄 License
-
-Project ini menggunakan license MIT. Lihat file `LICENSE` untuk detail lebih lanjut.
-
-## 📞 Support
-
-Jika ada pertanyaan atau masalah, silakan buat issue di repository ini atau hubungi developer.
-
----
-
-**Happy Monitoring! 🚀** 
+- Pastikan URL API dapat diakses
+- Update konfigurasi WhatsApp API jika diperlukan
+- Check log untuk melihat status setiap API call
+- Monitor notification counter dan remaining limits
+- Restart aplikasi jika ingin reset counter notifikasi 
